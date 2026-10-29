@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nuestra Carta Celeste</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,400;0,600;1,400;1,500&family=Mulish:wght@300;400;600&family=DM+Mono:wght@400&display=swap">
+<style>
+/* Layout: a star chart read top to bottom; 46 stars = 46 months, one constellation that ends at the altar */
+:root{
+  --night:#0d1024;      /* page ground, deep blue night */
+  --dusk:#171b38;       /* raised panels */
+  --ink:#ece6f5;        /* body text, a cool lilac white */
+  --muted:#a7a2c4;      /* secondary text */
+  --star:#f6d9a8;       /* warm starlight accent */
+  --rose:#e8a6b8;       /* soft rose for one emphasis */
+  --line:rgba(246,217,168,.28);
+  --f-display:"Cormorant", "Cormorant Garamond", Georgia, serif;
+  --f-body:"Mulish", "Segoe UI", system-ui, sans-serif;
+  --f-mono:"DM Mono", ui-monospace, Consolas, monospace;
+  color-scheme:dark;
+}
+html{scroll-behavior:smooth}
+body{background:var(--night);color:var(--ink);font-family:var(--f-body);font-size:17px;line-height:1.7;font-weight:300;overflow-x:hidden}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+main{position:relative;z-index:1}
+section{min-height:88vh;display:flex;align-items:center;justify-content:center;padding-block:72px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{width:100%;max-width:640px;display:flex;flex-direction:column;gap:22px}
+.coord{font-family:var(--f-mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--star);opacity:.85}
+h1,h2{font-family:var(--f-display);font-weight:400;line-height:1.05;margin:0;text-wrap:balance}
+h1{font-size:clamp(52px,13vw,112px);font-style:italic}
+h1 small{display:block;font-size:.34em;font-style:normal;letter-spacing:.02em;color:var(--muted);margin-top:14px}
+h2{font-size:clamp(36px,8vw,58px);font-style:italic}
+p{margin:0;max-width:62ch}
+.lead{font-size:19px;color:var(--ink)}
+.dim{color:var(--muted)}
+.hero{text-align:left}
+.next{align-self:flex-start;margin-top:18px;background:none;border:1px solid var(--line);color:var(--star);font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:12px 20px;border-radius:999px;cursor:pointer;text-decoration:none;transition:background .3s}
+.next:hover,.next:focus-visible{background:rgba(246,217,168,.1);outline:none}
+.next:focus-visible{box-shadow:0 0 0 2px var(--star)}
+
+/* almanac numbers */
+.almanac{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.almanac div{background:var(--night);padding:20px 14px;display:flex;flex-direction:column;gap:4px}
+.almanac b{font-family:var(--f-display);font-size:clamp(34px,8vw,52px);font-weight:400;color:var(--star);line-height:1;font-variant-numeric:tabular-nums}
+.almanac span{font-family:var(--f-mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+
+/* letter */
+.letter p+p{margin-top:0}
+.letter{display:flex;flex-direction:column;gap:18px}
+.sign{font-family:var(--f-display);font-style:italic;font-size:28px;color:var(--rose)}
+
+/* route of stars */
+.route{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0;border-left:1px solid var(--line);margin-left:6px}
+.route li{position:relative;padding:0 0 30px 26px;display:flex;flex-direction:column;gap:4px}
+.route li:last-child{padding-bottom:0}
+.route li::before{content:"";position:absolute;left:-5px;top:9px;width:9px;height:9px;border-radius:50%;background:var(--star);box-shadow:0 0 12px var(--star)}
+.route li.future::before{background:var(--night);border:1px solid var(--rose);box-shadow:0 0 12px var(--rose)}
+.route .when{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--star)}
+.route li.future .when{color:var(--rose)}
+.route h3{margin:0;font-family:var(--f-display);font-size:28px;font-weight:500;line-height:1.15}
+
+/* reasons: tap a star */
+.reasons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;max-width:420px}
+.reasons button{aspect-ratio:1;max-width:100%;background:transparent;border:1px solid var(--line);border-radius:50%;color:var(--star);font-family:var(--f-display);font-size:26px;cursor:pointer;display:grid;place-items:center;transition:transform .3s,background .3s}
+.reasons button:hover,.reasons button:focus-visible{transform:scale(1.06);background:rgba(246,217,168,.08);outline:none}
+.reasons button:focus-visible{box-shadow:0 0 0 2px var(--star)}
+.reasons button.seen{background:rgba(246,217,168,.14);border-color:var(--star)}
+.reason-out{min-height:0;padding:14px 18px;background:var(--dusk);border-radius:4px;font-family:var(--f-display);font-size:24px;font-style:italic;line-height:1.35;color:var(--ink)}
+
+/* finale */
+.finale{text-align:center;align-items:center}
+.finale p{margin-inline:auto}
+.count{font-family:var(--f-display);font-size:clamp(80px,22vw,170px);line-height:.9;color:var(--star);font-variant-numeric:tabular-nums}
+.altar{font-family:var(--f-display);font-style:italic;font-size:clamp(30px,7vw,46px);color:var(--rose);line-height:1.15;text-wrap:balance}
+
+.reveal{opacity:1;transform:none;transition:opacity 1s ease,transform 1s ease}
+.js .reveal.pending{opacity:.15;transform:translateY(18px)}
+@media (max-width:480px){.reasons{grid-template-columns:repeat(3,minmax(0,1fr))}.almanac div{padding:16px 10px}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.reveal,.reasons button{transition:none}}
+
+.music{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;width:48px;height:48px;border-radius:50%;border:1px solid var(--line);background:var(--dusk);color:var(--star);font-size:20px;cursor:pointer;display:grid;place-items:center}
+.music:focus-visible{outline:none;box-shadow:0 0 0 2px var(--star)}
+.music{transition:transform .08s linear}
+</style>
+</head>
+<body>
+
+
+<audio id="bgm" src="musica/fondo.mp3" loop preload="auto"></audio>
+<button class="music" id="musicBtn" type="button" aria-label="Reproducir música">♪</button>
+<canvas id="sky" aria-hidden="true"></canvas>
+<main>
+  <section id="inicio">
+    <div class="wrap hero reveal">
+      <span class="coord">Carta celeste · 46 estrellas</span>
+      <h1>3 años y 10 meses<small>de caminar a su lado, mi princesa</small></h1>
+      <p class="lead">Cada estrella de este cielo es un mes que he tenido la bendición de quererla. Ya van cuarenta y seis, y todas forman una sola constelación: la nuestra.</p>
+      <a class="next" href="#almanaque">Siga las estrellas ↓</a>
+    </div>
+  </section>
+
+  <section id="almanaque">
+    <div class="wrap reveal">
+      <span class="coord">Almanaque de nosotros</span>
+      <h2>Lo que llevamos contado</h2>
+      <div class="almanac">
+        <div><b>46</b><span>meses</span></div>
+        <div><b>1.400</b><span>días, y algo más</span></div>
+        <div><b>1</b><span>anillo</span></div>
+      </div>
+      <p class="dim">Los números se quedan cortos. Pero me gusta contarlos, porque cada uno es un día en que usted eligió quedarse.</p>
+      <a class="next" href="#carta">Siguiente ↓</a>
+    </div>
+  </section>
+
+  <section id="carta">
+    <div class="wrap letter reveal">
+      <span class="coord">Una carta para usted</span>
+      <h2>Mi amor</h2>
+      <p>Hoy cumplimos un mes más, y quería decírselo de una forma distinta: dibujándole el cielo.</p>
+      <p>Cuando la conocí no sabía que mi vida iba a cambiar tanto. Usted llegó con su inteligencia, su paciencia y esa manera tan suya de hacer que todo se sienta en orden. Desde entonces, los días buenos son mejores y los difíciles se hacen más livianos.</p>
+      <p>Gracias por cada mes. Por las conversaciones, por los planes, por creer en mí incluso cuando yo dudaba. Gracias por decirme que sí.</p>
+      <p>No hay mes en que no me sienta orgulloso de usted, ni día en que no agradezca tenerla.</p>
+      <span class="sign">Su amorcito</span>
+      <a class="next" href="#ruta">Siguiente ↓</a>
+    </div>
+  </section>
+
+  <section id="ruta">
+    <div class="wrap reveal">
+      <span class="coord">Ruta de nuestra constelación</span>
+      <h2>De dónde venimos, a dónde vamos</h2>
+      <ol class="route">
+        <li><span class="when">Hace 3 años y 10 meses</span><h3>La primera estrella</h3><p class="dim">El día en que empezamos a ser novios, y todo comenzó a tener otro brillo.</p></li>
+        <li><span class="when">Mes tras mes</span><h3>Cuarenta y cinco estrellas más</h3><p class="dim">Risas, trabajo, sueños compartidos y un montón de días que hoy guardo como tesoros.</p></li>
+        <li><span class="when">Laguna Esmeralda, Ushuaia</span><h3>El sí sobre el hielo</h3><p class="dim">Una laguna congelada, el frío del fin del mundo y usted diciéndome que sí. La estrella más brillante de todas.</p></li>
+        <li class="future"><span class="when">Mayo de 2027</span><h3>El altar</h3><p class="dim">La estrella que todavía nos espera.</p></li>
+      </ol>
+      <a class="next" href="#razones">Siguiente ↓</a>
+    </div>
+  </section>
+
+  <section id="razones">
+    <div class="wrap reveal">
+      <span class="coord">Doce estrellas por descubrir</span>
+      <h2>Por qué la quiero</h2>
+      <p class="dim">Toque cada estrella. Detrás de cada una hay una razón.</p>
+      <div class="reasons" id="reasons"></div>
+      <div class="reason-out" id="reasonOut" aria-live="polite">Elija una estrella, mi princesa.</div>
+      <a class="next" href="#altar">Última estrella ↓</a>
+    </div>
+  </section>
+
+  <section id="altar">
+    <div class="wrap finale reveal">
+      <span class="coord">Próxima estrella</span>
+      <div class="count" id="monthsLeft">7</div>
+      <p class="dim" id="monthsLabel">meses para mayo de 2027</p>
+      <p class="altar">Faltan pocas estrellas. La espero en el altar.</p>
+      <p>Feliz mes, mi amor. Gracias por estos 3 años y 10 meses. Lo mejor todavía está por venir.</p>
+      <span class="sign">Con todo mi amor, su amorcito</span>
+    </div>
+  </section>
+</main>
+
+<script>
+document.documentElement.classList.add('js');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* months until May 2027 */
+(function(){
+  const now = new Date();
+  let m = (2027 - now.getFullYear())*12 + (4 - now.getMonth());
+  if (m < 0) m = 0;
+  document.getElementById('monthsLeft').textContent = m;
+  document.getElementById('monthsLabel').textContent = (m === 1 ? 'mes' : 'meses') + ' para mayo de 2027';
+})();
+
+/* reasons */
+const razones = [
+  'Porque su sonrisa me acomoda el día entero.',
+  'Porque es la mujer más inteligente que conozco, y nunca lo presume.',
+  'Porque me escucha, incluso cuando le hablo de código.',
+  'Porque con usted hasta un día de oficina se siente bonito.',
+  'Porque me hace querer ser un mejor hombre.',
+  'Porque sabe calmarme con una sola mirada.',
+  'Porque dijo que sí sobre una laguna congelada.',
+  'Porque sueña en grande y me invita a soñar con usted.',
+  'Porque su forma de cuidar a los demás me enamora.',
+  'Porque es fuerte y dulce a la vez.',
+  'Porque a su lado siempre me siento en casa.',
+  'Porque quiero pasar el resto de mi vida contándole más razones.'
+];
+const grid = document.getElementById('reasons'), out = document.getElementById('reasonOut');
+razones.forEach((r,i)=>{
+  const b = document.createElement('button');
+  b.type='button'; b.id='razon-'+(i+1); b.textContent='✦';
+  b.setAttribute('aria-label','Razón '+(i+1));
+  b.addEventListener('click',()=>{ b.classList.add('seen'); out.textContent = r; });
+  grid.appendChild(b);
+});
+
+/* reveal on scroll (content stays legible at rest) */
+const io = 'IntersectionObserver' in window && !reduce ? new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){ e.target.classList.remove('pending'); io.unobserve(e.target); }
+}),{threshold:.2}) : null;
+if(io) document.querySelectorAll('.reveal').forEach((el,i)=>{ if(i>0){ el.classList.add('pending'); io.observe(el); } });
+
+/* sky: background stars + a 46-star constellation drawn as a winding path */
+const cv = document.getElementById('sky'), cx = cv.getContext('2d');
+let W,H,dpr,bg=[],path=[];
+function build(){
+  dpr = Math.min(devicePixelRatio||1,2);
+  W = innerWidth; H = innerHeight;
+  cv.width = W*dpr; cv.height = H*dpr; cx.setTransform(dpr,0,0,dpr,0,0);
+  bg = Array.from({length: Math.round(W*H/5000)},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.1+.2,p:Math.random()*6.28}));
+  path = [];
+  let seed = 7; const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  for(let i=0;i<46;i++){
+    const t = i/45;
+    const x = W*(.08 + .84*t);
+    const y = H*(.78 - .5*t) + Math.sin(t*9)*H*.07 + (rnd()-.5)*H*.05;
+    path.push({x,y,big:i===45});
+  }
+}
+let start = performance.now();
+function frame(now){
+  cx.clearRect(0,0,W,H);
+  const time = now/1000;
+  for(const s of bg){
+    const a = reduce ? .6 : .35 + .35*Math.sin(time*1.3+s.p);
+    cx.globalAlpha = a; cx.fillStyle = '#ece6f5';
+    cx.beginPath(); cx.arc(s.x,s.y,s.r,0,6.283); cx.fill();
+  }
+  const prog = reduce ? 46 : Math.min(46, 6 + (now-start)/90);
+  const L = musicLevels(time);
+  cx.globalAlpha = .35 + .45*L.bass; cx.strokeStyle = '#f6d9a8'; cx.lineWidth = 1;
+  cx.beginPath();
+  for(let i=0;i<Math.floor(prog);i++){ const p=path[i]; i?cx.lineTo(p.x,p.y):cx.moveTo(p.x,p.y); }
+  cx.stroke();
+  for(let i=0;i<Math.floor(prog);i++){
+    const e = L.bins[i], p = path[i], r = (p.big ? 4.5 : 1.9) * (1 + 1.1*e);
+    cx.globalAlpha = 1; cx.fillStyle = p.big ? '#e8a6b8' : '#f6d9a8';
+    cx.shadowColor = cx.fillStyle; cx.shadowBlur = (p.big ? 18 : 8) + 28*e;
+    cx.beginPath(); cx.arc(p.x,p.y,r,0,6.283); cx.fill();
+  }
+  cx.shadowBlur = 0; cx.globalAlpha = 1;
+  if (typeof mb !== 'undefined') {
+    if (!bgm.paused) { mb.style.boxShadow = `0 0 ${6+40*L.bass}px ${2+8*L.bass}px rgba(246,217,168,${.25+.6*L.bass})`; mb.style.transform = `scale(${1+.18*L.bass})`; }
+    else { mb.style.boxShadow = ''; mb.style.transform = ''; }
+  }
+  if(!reduce) requestAnimationFrame(frame);
+}
+build(); addEventListener('resize',()=>{ build(); if(reduce) frame(performance.now()); });
+requestAnimationFrame(frame);
+
+/* música de fondo: suena al primer toque (los navegadores bloquean el autoplay con sonido) */
+const bgm=document.getElementById('bgm'),mb=document.getElementById('musicBtn');
+bgm.volume=.6;
+let actx=null, analyser=null, freq=null;
+const sm = {bass:0, bins:new Array(46).fill(0)};
+const ms = {avg:0, flash:0, last:-1, wave:-9, bass:0, binAvg:new Array(46).fill(0)};
+function initAudio(){
+  if (actx || location.protocol === 'file:') return;   // abierto como archivo: el navegador no deja analizar el audio, se usa el pulso simulado
+  try{
+    actx = new (window.AudioContext||window.webkitAudioContext)();
+    const src = actx.createMediaElementSource(bgm);
+    analyser = actx.createAnalyser(); analyser.fftSize = 512; analyser.smoothingTimeConstant = .5;
+    src.connect(analyser); analyser.connect(actx.destination);
+    freq = new Uint8Array(analyser.frequencyBinCount);
+  }catch(e){ actx = null; analyser = null; }
+}
+function musicLevels(t){
+  const playing = typeof bgm !== 'undefined' && !bgm.paused;
+  const raw = new Array(46).fill(0);
+  if (!playing){ ms.flash *= .9; }
+  else if (analyser){
+    analyser.getByteFrequencyData(freq);
+    let e = 0; for (let k=1;k<24;k++) e += freq[k]; e = e/23/255;      // energía de graves y voz
+    ms.avg += (e - ms.avg) * .04;                                       // promedio lento: se adapta a canciones suaves
+    if (e > ms.avg*1.12 && e - ms.avg > .015 && t - ms.last > .28){ ms.flash = 1; ms.last = t; ms.wave = t; }
+    ms.flash *= .9;
+    ms.bass = Math.min(1, ms.flash*.8 + Math.max(0, e - ms.avg)*8);
+    for (let i=0;i<46;i++){
+      const b = 1 + Math.round(Math.pow(i/45, 1.5) * 110);
+      const v = freq[b]/255;
+      ms.binAvg[i] += (v - ms.binAvg[i]) * .06;
+      raw[i] = Math.max(0, v - ms.binAvg[i]) * 5;                       // cuánto sube ese tono sobre lo normal
+    }
+  } else {
+    if (t - ms.last > .77){ ms.flash = 1; ms.last = t; ms.wave = t; }   // pulso simulado si no se puede analizar
+    ms.flash *= .92; ms.bass = ms.flash*.8;
+    for (let i=0;i<46;i++) raw[i] = .25 + .25*Math.sin(t*2.2 - i*.5);
+  }
+  if (!analyser) ms.bass = playing ? ms.flash*.8 : 0;
+  const front = (t - ms.wave) * 70;                                     // ola de luz que recorre la constelación en cada golpe
+  for (let i=0;i<46;i++){
+    const w = playing ? Math.exp(-((i-front)*(i-front))/10) * Math.max(0, 1 - (t-ms.wave)*1.2) : 0;
+    const target = Math.min(1, raw[i] + ms.flash*.35 + w*.9);
+    sm.bins[i] += (target - sm.bins[i]) * .45;
+  }
+  sm.bass += (ms.bass - sm.bass) * .5;
+  return sm;
+}
+function setMusic(on){
+  if(on){initAudio(); if(actx) actx.resume(); bgm.play().then(()=>{mb.classList.add('on');mb.textContent='❚❚';mb.setAttribute('aria-label','Pausar música');}).catch(()=>{});}
+  else{bgm.pause();mb.classList.remove('on');mb.textContent='♪';mb.setAttribute('aria-label','Reproducir música');}
+}
+mb.addEventListener('click',e=>{e.stopPropagation();setMusic(bgm.paused);});
+document.addEventListener('click',function first(){ if(bgm.paused) setMusic(true); document.removeEventListener('click',first); },{once:true});
+</script>
+
+</body>
+</html>
